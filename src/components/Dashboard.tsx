@@ -101,33 +101,33 @@ export function Dashboard() {
         {!isConnected && (
           <div className="text-center py-16">
             <div className="max-w-md mx-auto">
-              <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              <Wallet className="w-16 h-16 text-morpho-text-secondary mx-auto mb-6" />
+              <h2 className="text-2xl font-bold text-morpho-text mb-4">
                 Connect Your Wallet
               </h2>
-              <p className="text-gray-600 mb-8">
+              <p className="text-morpho-text-secondary mb-8">
                 Connect your wallet to view your Morpho vault positions and track your yields 
                 across multiple chains.
               </p>
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="bg-morpho-surface border border-morpho-border rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-morpho-text mb-4">
                   Supported Features
                 </h3>
-                <ul className="text-left space-y-2 text-gray-600">
+                <ul className="text-left space-y-2 text-morpho-text-secondary">
                   <li className="flex items-center space-x-2">
-                    <TrendingUp className="w-4 h-4 text-green-500" />
+                    <TrendingUp className="w-4 h-4 text-green-400" />
                     <span>Real-time yield tracking</span>
                   </li>
                   <li className="flex items-center space-x-2">
-                    <BarChart3 className="w-4 h-4 text-blue-500" />
+                    <BarChart3 className="w-4 h-4 text-blue-400" />
                     <span>Multi-chain support</span>
                   </li>
                   <li className="flex items-center space-x-2">
-                    <DollarSign className="w-4 h-4 text-purple-500" />
+                    <DollarSign className="w-4 h-4 text-purple-400" />
                     <span>Detailed position analytics</span>
                   </li>
                   <li className="flex items-center space-x-2">
-                    <Percent className="w-4 h-4 text-morpho-500" />
+                    <Percent className="w-4 h-4 text-morpho-accent" />
                     <span>APY and rewards tracking</span>
                   </li>
                 </ul>
@@ -254,10 +254,10 @@ export function Dashboard() {
         {!isConnected && isSupported && (
           <div className="mt-12">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-morpho-text mb-2">
                 Explore Morpho Vaults
               </h2>
-              <p className="text-gray-600">
+              <p className="text-morpho-text-secondary">
                 Browse available vaults on {getMorphoChainById(selectedChainId)?.name}
               </p>
             </div>
