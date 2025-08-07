@@ -10,6 +10,14 @@ export const metadata: Metadata = {
   description: 'Track your Morpho vault yields across multiple chains',
   keywords: ['DeFi', 'Morpho', 'Yield', 'Ethereum', 'Multi-chain', 'Vault'],
   authors: [{ name: 'Morpho Yield Monitor' }],
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', type: 'image/x-icon' }
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.svg',
+  },
   openGraph: {
     title: 'Morpho Yield Monitor',
     description: 'Track your Morpho vault yields across multiple chains',
