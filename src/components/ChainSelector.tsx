@@ -41,7 +41,7 @@ export function ChainSelector({ onChainSelect, className }: ChainSelectorProps) 
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         disabled={isPending}
         className={cn(
-          "flex items-center space-x-3 px-4 py-2 rounded-lg border transition-all duration-200 min-w-[160px]",
+          "flex items-center space-x-1 sm:space-x-2 px-1.5 sm:px-2 md:px-3 py-1 sm:py-1.5 md:py-2 rounded-lg border transition-all duration-200 min-w-[80px] sm:min-w-[100px] md:min-w-[140px] lg:min-w-[160px]",
           isSupported 
             ? "bg-morpho-surface border-morpho-border hover:border-morpho-accent hover:shadow-md text-morpho-text" 
             : "bg-morpho-error/10 border-morpho-error text-morpho-error",
@@ -50,7 +50,7 @@ export function ChainSelector({ onChainSelect, className }: ChainSelectorProps) 
       >
         {/* Chain Icon */}
         <div className={cn(
-          "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+          "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-xs font-bold",
           isSupported ? "bg-morpho-accent/20 text-morpho-accent" : "bg-morpho-error/20 text-morpho-error"
         )}>
           {currentChain ? currentChain.name.charAt(0) : '?'}
@@ -58,7 +58,7 @@ export function ChainSelector({ onChainSelect, className }: ChainSelectorProps) 
         
         {/* Chain Name */}
         <div className="flex-1 text-left">
-          <p className="text-sm font-medium text-morpho-text">
+          <p className="text-xs font-medium text-morpho-text">
             {currentChain?.name || 'Unsupported Chain'}
           </p>
           {!isSupported && (

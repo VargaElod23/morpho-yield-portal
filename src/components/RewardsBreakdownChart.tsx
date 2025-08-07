@@ -130,21 +130,21 @@ export function RewardsBreakdownChart({ vaults, className = '' }: RewardsBreakdo
   return (
     <div className={`bg-morpho-surface border border-morpho-border rounded-lg p-6 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
         <div>
-          <h3 className="text-lg font-semibold text-morpho-text mb-1">Rewards Breakdown</h3>
-          <p className="text-sm text-morpho-text-secondary">
+          <h3 className="text-base sm:text-lg font-semibold text-morpho-text mb-1">Rewards Breakdown</h3>
+          <p className="text-xs sm:text-sm text-morpho-text-secondary">
             See which vaults are generating the most rewards
           </p>
         </div>
         
         {/* Timeframe Selector */}
-        <div className="flex items-center space-x-1 bg-morpho-bg rounded-lg p-1">
+        <div className="flex items-center space-x-1 bg-morpho-bg rounded-lg p-1 w-fit">
           {(['1m', '3m', '6m'] as const).map((timeframe) => (
             <button
               key={timeframe}
               onClick={() => setSelectedTimeframe(timeframe)}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                 selectedTimeframe === timeframe
                   ? 'bg-morpho-accent text-white'
                   : 'text-morpho-text-secondary hover:text-morpho-text'
@@ -159,36 +159,37 @@ export function RewardsBreakdownChart({ vaults, className = '' }: RewardsBreakdo
       {/* Summary Stats */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="text-center">
-          <p className="text-sm text-morpho-text-secondary">Total Earned</p>
-          <p className="text-lg font-bold text-morpho-text">
+          <p className="text-xs sm:text-sm text-morpho-text-secondary">Total Earned</p>
+          <p className="text-sm sm:text-lg font-bold text-morpho-text">
             {formatTokenAmount(totalEarned, 'USD', 2)}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-sm text-morpho-text-secondary">Total Deposited</p>
-          <p className="text-lg font-bold text-morpho-success">
+          <p className="text-xs sm:text-sm text-morpho-text-secondary">Total Deposited</p>
+          <p className="text-sm sm:text-lg font-bold text-morpho-success">
             {formatTokenAmount(totalDeposited, 'USD', 2)}
           </p>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="h-64">
+      <div className="h-48 sm:h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rewardsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
             <XAxis 
               dataKey="vaultName" 
               stroke="#a0a0a0"
-              fontSize={12}
+              fontSize={10}
               tickFormatter={(value) => {
-                // Truncate long vault names
-                return value.length > 15 ? value.substring(0, 15) + '...' : value;
+                // Truncate long vault names more aggressively on mobile
+                return value.length > 12 ? value.substring(0, 12) + '...' : value;
               }}
+              interval="preserveStartEnd"
             />
             <YAxis 
               stroke="#a0a0a0"
-              fontSize={12}
+              fontSize={10}
               domain={[0, 'dataMax']}
               tickFormatter={(value) => {
                 if (value >= 1000) {

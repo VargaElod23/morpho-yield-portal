@@ -13,15 +13,15 @@ export const config = createConfig({
     injected(),
     coinbaseWallet({
       appName: 'Morpho Yield Monitor',
-      appLogoUrl: '/logo.png',
+      appLogoUrl: '/favicon.svg',
     }),
     walletConnect({
       projectId,
       metadata: {
         name: 'Morpho Yield Monitor',
         description: 'Track your Morpho vault yields across multiple chains',
-        url: 'https://morpho-yield-monitor.vercel.app',
-        icons: ['/logo.png'],
+        url: typeof window !== 'undefined' ? window.location.origin : 'https://morpho-yield-monitor.vercel.app',
+        icons: ['/favicon.svg'],
       },
     }),
   ],

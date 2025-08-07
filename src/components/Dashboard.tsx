@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount, useChainId } from 'wagmi';
+import dynamic from 'next/dynamic';
 import { Header } from './Header';
 import { VaultList } from './VaultList';
 import { DepositChart } from './DepositChart';
@@ -26,6 +27,12 @@ export function Dashboard() {
   
   const [selectedChainId, setSelectedChainId] = useState<number>(chainId);
   const [showOnlyUserPositions, setShowOnlyUserPositions] = useState<boolean>(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Update selected chain when wallet chain changes
   useEffect(() => {
@@ -56,6 +63,8 @@ export function Dashboard() {
   const userVaults = vaultData?.vaults?.filter(v => v.userPosition) || [];
   const totalBalance = userVaults.reduce((sum, v) => sum + (v.yieldData?.currentBalance || 0), 0);
   
+
+  
   // Calculate total deposited from actual transaction data (more accurate than vault.userPosition.deposited)
   const totalDepositedFromTransactions = transactions
     .filter(tx => tx.type === 'MetaMorphoDeposit')
@@ -74,6 +83,15 @@ export function Dashboard() {
   // Get decimals for the primary asset
   const primaryAssetDecimals = userVaults.find(v => v.asset?.symbol === primaryAsset)?.asset?.decimals || 18;
 
+  // Show loading state during hydration
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-morpho-bg flex items-center justify-center">
+        <div className="text-morpho-text">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-morpho-bg">
       <Header 
@@ -82,7 +100,7 @@ export function Dashboard() {
         isRefreshing={isLoading}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Unsupported Chain Warning */}
         {!isSupported && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
@@ -99,8 +117,8 @@ export function Dashboard() {
 
         {/* Not Connected State */}
         {!isConnected && (
-          <div className="text-center py-16">
-            <div className="max-w-md mx-auto">
+          <div className="text-center py-8 sm:py-16">
+            <div className="max-w-md mx-auto px-4">
               <Wallet className="w-16 h-16 text-morpho-text-secondary mx-auto mb-6" />
               <h2 className="text-2xl font-bold text-morpho-text mb-4">
                 Connect Your Wallet
@@ -146,7 +164,7 @@ export function Dashboard() {
 
             {/* Rewards Breakdown Chart and Claimable Rewards */}
             {userVaults.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div className="lg:col-span-2">
                   <RewardsBreakdownChart vaults={vaultData?.vaults || []} />
                 </div>
@@ -158,77 +176,77 @@ export function Dashboard() {
 
             {/* User Stats */}
             {userVaults.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-morpho-surface border border-morpho-border rounded-lg p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-morpho-text-secondary uppercase tracking-wide">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div className="bg-morpho-surface border border-morpho-border rounded-lg p-4 sm:p-6">
+                  <div className="flex items-center justify-between min-h-[60px]">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm text-morpho-text-secondary uppercase tracking-wide">
                         Total Balance
                       </p>
-                      <p className="text-2xl font-bold text-morpho-text mt-1">
+                      <p className="text-sm sm:text-base lg:text-lg xl:text-xl font-bold text-morpho-text mt-1">
                         {formatTokenAmount(totalBalance, primaryAsset, 4, primaryAssetDecimals)}
                       </p>
                     </div>
-                    <div className="p-3 bg-morpho-accent/10 rounded-lg">
-                      <Wallet className="w-6 h-6 text-morpho-accent" />
+                    <div className="flex-shrink-0 p-2 sm:p-3 bg-morpho-accent/10 rounded-lg ml-3">
+                      <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-morpho-accent" />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-morpho-surface border border-morpho-border rounded-lg p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-morpho-text-secondary uppercase tracking-wide">
+                <div className="bg-morpho-surface border border-morpho-border rounded-lg p-4 sm:p-6">
+                  <div className="flex items-center justify-between min-h-[60px]">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm text-morpho-text-secondary uppercase tracking-wide">
                         Total Deposited
                       </p>
-                      <p className="text-2xl font-bold text-morpho-text mt-1">
+                      <p className="text-sm sm:text-base lg:text-lg xl:text-xl font-bold text-morpho-text mt-1">
                         {formatTokenAmount(totalDeposited, primaryAsset, 4, primaryAssetDecimals)}
                       </p>
                     </div>
-                    <div className="p-3 bg-morpho-success/10 rounded-lg">
-                      <DollarSign className="w-6 h-6 text-morpho-success" />
+                    <div className="flex-shrink-0 p-2 sm:p-3 bg-morpho-success/10 rounded-lg ml-3">
+                      <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-morpho-success" />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-morpho-surface border border-morpho-border rounded-lg p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-morpho-text-secondary uppercase tracking-wide">
+                <div className="bg-morpho-surface border border-morpho-border rounded-lg p-4 sm:p-6">
+                  <div className="flex items-center justify-between min-h-[60px]">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm text-morpho-text-secondary uppercase tracking-wide">
                         Total Earned
                       </p>
-                      <p className={cn("text-2xl font-bold mt-1", getValueColorClass(totalYield))}>
+                      <p className={cn("text-sm sm:text-base lg:text-lg xl:text-xl font-bold mt-1", getValueColorClass(totalYield))}>
                         {totalYield > 0 ? '+' : ''}{formatTokenAmount(totalYield, primaryAsset, 6, primaryAssetDecimals)}
                       </p>
                     </div>
                     <div className={cn(
-                      "p-3 rounded-lg",
+                      "flex-shrink-0 p-2 sm:p-3 rounded-lg ml-3",
                       totalYield > 0 ? "bg-morpho-success/10" : totalYield < 0 ? "bg-morpho-error/10" : "bg-morpho-surface-hover"
                     )}>
                       <TrendingUp className={cn(
-                        "w-6 h-6",
+                        "w-5 h-5 sm:w-6 sm:h-6",
                         totalYield > 0 ? "text-morpho-success" : totalYield < 0 ? "text-morpho-error" : "text-morpho-text-secondary"
                       )} />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-morpho-surface border border-morpho-border rounded-lg p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-morpho-text-secondary uppercase tracking-wide">
+                <div className="bg-morpho-surface border border-morpho-border rounded-lg p-4 sm:p-6">
+                  <div className="flex items-center justify-between min-h-[60px]">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm text-morpho-text-secondary uppercase tracking-wide">
                         Yield %
                       </p>
-                      <p className={cn("text-2xl font-bold mt-1", getValueColorClass(overallYieldPercentage))}>
+                      <p className={cn("text-sm sm:text-base lg:text-lg xl:text-xl font-bold mt-1", getValueColorClass(overallYieldPercentage))}>
                         {overallYieldPercentage > 0 ? '+' : ''}{overallYieldPercentage.toFixed(2)}%
                       </p>
                     </div>
                     <div className={cn(
-                      "p-3 rounded-lg",
+                      "flex-shrink-0 p-2 sm:p-3 rounded-lg ml-3",
                       overallYieldPercentage > 0 ? "bg-morpho-accent/10" : overallYieldPercentage < 0 ? "bg-morpho-error/10" : "bg-morpho-surface-hover"
                     )}>
                       <Percent className={cn(
-                        "w-6 h-6",
+                        "w-5 h-5 sm:w-6 sm:h-6",
                         overallYieldPercentage > 0 ? "text-morpho-accent" : overallYieldPercentage < 0 ? "text-morpho-error" : "text-morpho-text-secondary"
                       )} />
                     </div>

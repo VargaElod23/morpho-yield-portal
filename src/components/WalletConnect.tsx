@@ -19,9 +19,10 @@ export function WalletConnect() {
 
   if (!mounted) {
     return (
-      <button className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg">
-        <Wallet className="w-4 h-4" />
-        <span>Connect Wallet</span>
+      <button className="flex items-center space-x-0.5 sm:space-x-1 md:space-x-2 bg-gray-600 text-white px-1.5 sm:px-2 md:px-3 py-1 sm:py-1.5 md:py-2 rounded-lg">
+        <Wallet className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
+        <span className="hidden md:inline">Connect Wallet</span>
+        <span className="md:hidden">Connect</span>
       </button>
     );
   }
@@ -31,11 +32,12 @@ export function WalletConnect() {
       <div className="relative">
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex items-center space-x-2 bg-morpho-600 hover:bg-morpho-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-lg"
+          className="flex items-center space-x-0.5 sm:space-x-1 md:space-x-2 bg-morpho-600 hover:bg-morpho-700 text-white px-1.5 sm:px-2 md:px-3 py-1 sm:py-1.5 md:py-2 rounded-lg transition-all duration-200 shadow-lg"
         >
-          <Wallet className="w-4 h-4" />
-          <span className="font-medium">{truncateAddress(address)}</span>
-          <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+          <Wallet className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
+          <span className="font-medium hidden md:inline">{truncateAddress(address)}</span>
+          <span className="font-medium md:hidden">{truncateAddress(address, 2)}</span>
+          <ChevronDown className={`w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {isDropdownOpen && (
@@ -65,11 +67,12 @@ export function WalletConnect() {
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         disabled={isPending}
-        className="flex items-center space-x-2 bg-morpho-600 hover:bg-morpho-700 disabled:bg-morpho-400 text-white px-6 py-2 rounded-lg transition-all duration-200 shadow-lg font-medium"
+        className="flex items-center space-x-0.5 sm:space-x-1 md:space-x-2 bg-morpho-600 hover:bg-morpho-700 disabled:bg-morpho-400 text-white px-1.5 sm:px-2 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-lg transition-all duration-200 shadow-lg font-medium"
       >
-        <Wallet className="w-4 h-4" />
-        <span>{isPending ? 'Connecting...' : 'Connect Wallet'}</span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+        <Wallet className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
+        <span className="hidden md:inline">{isPending ? 'Connecting...' : 'Connect Wallet'}</span>
+        <span className="md:hidden">{isPending ? 'Connecting...' : 'Connect'}</span>
+        <ChevronDown className={`w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isDropdownOpen && (
