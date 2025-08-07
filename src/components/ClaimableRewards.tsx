@@ -148,7 +148,7 @@ export function ClaimableRewards({ className = '' }: ClaimableRewardsProps) {
             <div className="flex items-center space-x-1">
               <button className="px-2 py-1 bg-morpho-accent text-white rounded text-xs font-medium hover:bg-morpho-accent/90 transition-colors flex items-center space-x-1">
                 <ExternalLink className="w-3 h-3" />
-                <span>Claim</span>
+                <span><a href="https://app.morpho.org/earn" target="_blank" rel="noopener noreferrer">Claim</a></span>
               </button>
             </div>
           </div>
