@@ -115,6 +115,8 @@ export const GET_USER_TRANSACTIONS_QUERY = `
   }
 `;
 
+
+
 // Utility functions for API calls
 export async function getVaults(chainId: number): Promise<MorphoVault[]> {
   try {
@@ -229,6 +231,8 @@ export async function getUserTransactions(
     throw new Error(`Failed to fetch user transactions: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
+
+
 
 // Chain ID mapping for supported Morpho chains
 const SUPPORTED_CHAIN_IDS = [1, 137, 42161, 8453, 1301, 1002];

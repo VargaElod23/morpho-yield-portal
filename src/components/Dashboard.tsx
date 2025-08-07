@@ -5,6 +5,8 @@ import { useAccount, useChainId } from 'wagmi';
 import { Header } from './Header';
 import { VaultList } from './VaultList';
 import { DepositChart } from './DepositChart';
+import { RewardsBreakdownChart } from './RewardsBreakdownChart';
+import { ClaimableRewards } from './ClaimableRewards';
 import { useMorphoData } from '@/hooks/useMorphoData';
 import { isSupportedChain, getMorphoChainById } from '@/lib/chains';
 import { 
@@ -140,6 +142,18 @@ export function Dashboard() {
             {/* Deposit Chart */}
             {userVaults.length > 0 && (
               <DepositChart vaults={vaultData?.vaults || []} transactions={transactions} />
+            )}
+
+            {/* Rewards Breakdown Chart and Claimable Rewards */}
+            {userVaults.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <RewardsBreakdownChart vaults={vaultData?.vaults || []} />
+                </div>
+                <div className="lg:col-span-1 flex">
+                  <ClaimableRewards className="w-full" />
+                </div>
+              </div>
             )}
 
             {/* User Stats */}
