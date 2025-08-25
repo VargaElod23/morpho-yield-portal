@@ -259,7 +259,7 @@ export async function saveYieldHistoryDB(
   try {
     await sqlClient`
       INSERT INTO yield_history (address, total_balance, total_deposited, total_yield, chain_data)
-      VALUES (${address.toLowerCase()}, ${yieldData.totalBalance}, ${yieldData.totalDeposited}, ${yieldData.totalYield}, ${JSON.stringify(yieldData.chainData)})
+      VALUES (${address.toLowerCase()}, ${yieldData.totalBalance}, ${yieldData.totalDeposited}, ${yieldData.totalYield}, ${yieldData.chainData ? JSON.stringify(yieldData.chainData) : null})
     `;
   } catch (error) {
     console.error('Failed to save yield history:', error);

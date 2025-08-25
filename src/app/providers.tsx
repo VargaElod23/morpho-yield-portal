@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useMemo } from 'react';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { config } from '@/lib/wagmi';
@@ -10,7 +10,8 @@ interface ProvidersProps {
 }
 
 export function Providers({ children }: ProvidersProps) {
-  const [queryClient] = useState(
+  // Memoize QueryClient to prevent recreating on re-renders
+  const queryClient = useMemo(
     () =>
       new QueryClient({
         defaultOptions: {
@@ -19,9 +20,11 @@ export function Providers({ children }: ProvidersProps) {
             // above 0 to avoid refetching immediately on the client
             staleTime: 60 * 1000, // 1 minute
             retry: 2,
+            refetchOnWindowFocus: false, // Prevent unnecessary refetches
           },
         },
-      })
+      }),
+    []
   );
 
   return (

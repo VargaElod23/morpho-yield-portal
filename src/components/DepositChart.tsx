@@ -85,8 +85,8 @@ function generateDepositData(vaults: VaultWithYield[], transactions: Transaction
   const data: DepositData[] = [];
   const now = new Date();
   
-  // Get actual user positions with balances
-  const userPositions = vaults.filter(vault => vault.userPosition && parseFloat(vault.userPosition.balance) > 0);
+  // Get actual user positions with balances (consistent with Dashboard.tsx:63)
+  const userPositions = vaults.filter(vault => vault.userPosition);
   
   // Calculate number of days based on timeframe
   const timeframeDays = {
@@ -239,19 +239,20 @@ export function DepositChart({ vaults, transactions, className = '' }: DepositCh
   const filteredTransactions = getFilteredTransactions();
   const depositData = generateDepositData(vaults, filteredTransactions, selectedTimeframe);
   
-  const totalCurrentValue = vaults.reduce((total, vault) => {
-    return total + (vault.userPosition ? parseFloat(vault.userPosition.balance) : 0);
-  }, 0);
+  // Use the exact same calculation logic as Dashboard.tsx lines 63-75
+  const userVaults = vaults.filter(v => v.userPosition) || [];
+  const totalCurrentValue = userVaults.reduce((sum, v) => sum + (v.yieldData?.currentBalance || 0), 0);
   
-  // Calculate total deposited from actual transaction data (more accurate than vault.userPosition.deposited)
+  // Calculate total deposited from actual transaction data (matches Dashboard.tsx:69-71)
   const totalDepositedFromTransactions = transactions
     .filter(tx => tx.type === 'MetaMorphoDeposit')
     .reduce((sum, tx) => sum + tx.data.assetsUsd, 0);
   
   const totalDeposited = totalDepositedFromTransactions;
+  const totalYield = totalCurrentValue - totalDeposited; // Matches Dashboard.tsx:74
   
   const percentageChange = totalDeposited > 0 
-    ? ((totalCurrentValue - totalDeposited) / totalDeposited) * 100 
+    ? (totalYield / totalDeposited) * 100 
     : 0;
   
   return (
@@ -373,9 +374,9 @@ export function DepositChart({ vaults, transactions, className = '' }: DepositCh
         <div>
           <p className="text-morpho-text-secondary text-sm">Total Earned Until Now</p>
           <p className={`font-semibold ${
-            percentageChange >= 0 ? 'text-morpho-success' : 'text-morpho-error'
+            totalYield >= 0 ? 'text-morpho-success' : 'text-morpho-error'
           }`}>
-            {formatCurrency(totalCurrentValue - totalDeposited, 'USD')}
+            {formatCurrency(totalYield, 'USD')}
           </p>
         </div>
       </div>

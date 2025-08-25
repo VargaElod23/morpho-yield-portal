@@ -12,11 +12,12 @@ import {
   Cell,
   Legend
 } from 'recharts';
-import { VaultWithYield } from '@/types/morpho';
+import { VaultWithYield, Transaction } from '@/types/morpho';
 import { formatTokenAmount, getValueColorClass } from '@/lib/utils';
 
 interface RewardsBreakdownChartProps {
   vaults: VaultWithYield[];
+  transactions?: Transaction[];
   className?: string;
 }
 
@@ -29,11 +30,11 @@ interface VaultRewardData {
   color: string;
 }
 
-export function RewardsBreakdownChart({ vaults, className = '' }: RewardsBreakdownChartProps) {
+export function RewardsBreakdownChart({ vaults, transactions = [], className = '' }: RewardsBreakdownChartProps) {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1m' | '3m' | '6m'>('3m');
 
-  // Filter vaults that have user positions
-  const userVaults = vaults.filter(vault => vault.userPosition && vault.yieldData);
+  // Use the exact same logic as Dashboard.tsx line 63
+  const userVaults = vaults.filter(vault => vault.userPosition);
 
   // Generate color palette for vaults
   const colors = [
@@ -47,33 +48,42 @@ export function RewardsBreakdownChart({ vaults, className = '' }: RewardsBreakdo
     '#f97316', // Orange
   ];
 
-  // Calculate rewards breakdown data
+  // Use uniform transaction-based calculation (matches Dashboard logic)
+  const totalBalance = userVaults.reduce((sum, v) => sum + (v.yieldData?.currentBalance || 0), 0);
+  
+  // Calculate total deposited from actual transaction data (matches Dashboard.tsx:69-71)
+  const totalDepositedFromTransactions = transactions
+    .filter(tx => tx.type === 'MetaMorphoDeposit')
+    .reduce((sum, tx) => sum + tx.data.assetsUsd, 0);
+  
+  const totalDeposited = totalDepositedFromTransactions;
+  const totalEarned = totalBalance - totalDeposited; // Matches Dashboard.tsx:74
+
+  // Calculate per-vault breakdown while maintaining total consistency
   const rewardsData: VaultRewardData[] = userVaults.map((vault, index) => {
-    const yieldData = vault.yieldData!;
-    const currentBalance = yieldData.currentBalance;
-    const totalDeposited = yieldData.totalDeposited;
-    const totalEarned = currentBalance - totalDeposited;
+    if (!vault.yieldData) return null;
     
-    // Add estimated claimable rewards based on vault APY and balance
-    const estimatedRewards = vault.userPosition ? 
-      parseFloat(vault.userPosition.balance) * ((vault.apy?.rewards || 0) / 100) : 0;
+    const vaultBalance = vault.yieldData.currentBalance;
+    
+    // Calculate this vault's proportion of total balance
+    const vaultProportion = totalBalance > 0 ? vaultBalance / totalBalance : 0;
+    
+    // Allocate earned yield proportionally to maintain consistency with total
+    const vaultEarned = totalEarned * vaultProportion;
+    const vaultDeposited = totalDeposited * vaultProportion;
     
     return {
       vaultName: vault.name,
       vaultAddress: vault.address,
-      totalEarned: Math.max(0, totalEarned + estimatedRewards), // Include estimated rewards
-      totalDeposited,
+      totalEarned: Math.max(0, vaultEarned),
+      totalDeposited: vaultDeposited,
       assetSymbol: vault.asset?.symbol || 'ETH',
       color: colors[index % colors.length],
     };
-  }).filter(data => data.totalEarned > 0); // Only show vaults with positive earnings
+  }).filter((data): data is VaultRewardData => data !== null && data.totalEarned > 0);
 
   // Sort by total earned (highest first)
   rewardsData.sort((a, b) => b.totalEarned - a.totalEarned);
-
-  // Calculate totals
-  const totalEarned = rewardsData.reduce((sum, data) => sum + data.totalEarned, 0);
-  const totalDeposited = rewardsData.reduce((sum, data) => sum + data.totalDeposited, 0);
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {

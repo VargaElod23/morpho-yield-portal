@@ -136,9 +136,13 @@ export async function sendYieldNotification(
       return false;
     }
 
+    const totalYield = parseFloat(yieldData.totalYield);
+    const totalBalance = parseFloat(yieldData.totalBalance);
+    const globalYieldPercentage = yieldData.yieldPercentage;
+    
     const payload = {
-      title: '📈 Daily Yield Update',
-      body: `Total: $${parseFloat(yieldData.totalBalance).toFixed(2)} | 24h: ${yieldData.yield24hPercentage > 0 ? '+' : ''}${yieldData.yield24hPercentage.toFixed(2)}%`,
+      title: '💰 Daily Yield Update',
+      body: `Total Earned: ${totalYield > 0 ? '+' : ''}$${totalYield.toFixed(2)} (${globalYieldPercentage > 0 ? '+' : ''}${globalYieldPercentage.toFixed(2)}%) | Balance: $${totalBalance.toFixed(2)}`,
       data: {
         address,
         yieldData,

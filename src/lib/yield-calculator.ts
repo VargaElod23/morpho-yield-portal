@@ -1,6 +1,4 @@
-import { getVaults, getUserVaultPositions, getUserTransactions } from './graphql';
-import { combineVaultWithUserData } from './utils';
-import type { VaultWithYield } from '@/types/morpho';
+import { isSupportedChain } from './chains';
 import type { YieldNotificationData } from '@/lib/notifications';
 
 import {
@@ -9,6 +7,10 @@ import {
   getYield24hAgo,
   type HistoricalYieldData,
 } from './database';
+
+// Import the same functions used by useMorphoData hook
+import { getVaults, getUserVaultPositions, getUserTransactions } from './graphql';
+import { combineVaultWithUserData } from './utils';
 
 // Use database functions (fallback to in-memory for development)
 const USE_DATABASE = process.env.NODE_ENV === 'production' || process.env.POSTGRES_URL;
@@ -21,55 +23,106 @@ export async function calculateUserYieldData(
   chainIds: number[] = [1, 137, 42161, 8453]
 ): Promise<YieldNotificationData | null> {
   try {
-    let allVaults: VaultWithYield[] = [];
+    // Use the same logic as Dashboard but aggregate across multiple chains
+    let allUserVaults: any[] = [];
+    let allTransactions: any[] = [];
     
-    // Fetch data from all specified chains
+    // Process each chain using the same logic as useMorphoData hook
     for (const chainId of chainIds) {
+      if (!isSupportedChain(chainId)) {
+        console.warn(`Chain ${chainId} is not supported`);
+        continue;
+      }
+      
       try {
-        const [vaults, userPositions, userTransactions] = await Promise.all([
-          getVaults(chainId),
+        console.log(`Fetching data for chain ${chainId} and address ${address}...`);
+        
+        // Fetch all vaults for the chain
+        const vaults = await getVaults(chainId);
+        
+        // Fetch user positions and transactions (same as useMorphoData hook)
+        const [userPositions, userTransactions] = await Promise.all([
           getUserVaultPositions(address, chainId),
           getUserTransactions(address, chainId)
         ]);
         
-        // Combine vault data with user positions
+        console.log(`Chain ${chainId} results:`, {
+          vaults: vaults.length,
+          userPositions: userPositions.length,
+          userTransactions: userTransactions.length
+        });
+        
+        // Combine vault data with user positions (same as useMorphoData)
         const vaultsWithUserData = vaults.map(vault => {
           const userPosition = userPositions.find(
             position => position.vault.address.toLowerCase() === vault.address.toLowerCase()
           );
           return combineVaultWithUserData(vault, userPosition, userTransactions);
         });
-        
-        // Only include vaults where user has positions
-        const userVaults = vaultsWithUserData.filter(vault => 
-          vault.userPosition && vault.yieldData && vault.yieldData.currentBalance > 0
+
+        // Add user positions that don't have matching vaults in the general list (same as useMorphoData)
+        const userPositionsNotInVaults = userPositions.filter(userPosition => 
+          !vaults.some(vault => vault.address.toLowerCase() === userPosition.vault.address.toLowerCase())
         );
+
+        // Convert user-only positions to VaultWithYield format (same as useMorphoData)
+        const userOnlyVaults = userPositionsNotInVaults.map(userPosition => {
+          const userBalance = parseFloat(userPosition.balance);
+          const estimatedTotalAssets = userBalance * 100;
+          
+          const vault = {
+            id: userPosition.vault.address,
+            name: userPosition.vault.name,
+            address: userPosition.vault.address,
+            totalAssets: (estimatedTotalAssets * Math.pow(10, userPosition.vault.asset.decimals)).toString(),
+            totalSupply: "0",
+            sharePrice: "1000000",
+            apy: userPosition.apy || { base: 0, rewards: 0 },
+            asset: userPosition.vault.asset,
+          };
+          return combineVaultWithUserData(vault, userPosition, userTransactions);
+        });
+
+        // Add user-only vaults to the main list
+        const chainVaultsWithUserData = [...vaultsWithUserData, ...userOnlyVaults];
         
-        allVaults = [...allVaults, ...userVaults];
+        // Filter to only user vaults (same as Dashboard line 63)
+        const chainUserVaults = chainVaultsWithUserData.filter(v => v.userPosition);
+        
+        allUserVaults = [...allUserVaults, ...chainUserVaults];
+        allTransactions = [...allTransactions, ...userTransactions];
+        
       } catch (chainError) {
         console.warn(`Failed to fetch data for chain ${chainId}:`, chainError);
       }
     }
     
-    if (allVaults.length === 0) {
+    console.log(`Total user vaults found across all chains: ${allUserVaults.length}`);
+    console.log(`Total transactions found: ${allTransactions.length}`);
+    
+    if (allUserVaults.length === 0) {
+      console.log(`No vaults with positions found for address: ${address}`);
       return null;
     }
     
-    // Calculate totals
-    const totals = allVaults.reduce(
-      (acc, vault) => {
-        const balance = vault.yieldData?.currentBalance || 0;
-        const deposited = vault.yieldData?.totalDeposited || 0;
-        const yield_ = vault.yieldData?.netYield || 0;
-        
-        return {
-          balance: acc.balance + balance,
-          deposited: acc.deposited + deposited,
-          yield: acc.yield + yield_,
-        };
-      },
-      { balance: 0, deposited: 0, yield: 0 }
-    );
+    // Use the exact same calculation logic as Dashboard.tsx lines 64-75
+    const totalBalance = allUserVaults.reduce((sum, v) => sum + (v.yieldData?.currentBalance || 0), 0);
+    
+    // Calculate total deposited from actual transaction data (matches Dashboard.tsx:69-71)
+    const totalDepositedFromTransactions = allTransactions
+      .filter(tx => tx.type === 'MetaMorphoDeposit')
+      .reduce((sum, tx) => sum + tx.data.assetsUsd, 0);
+    
+    const totalDeposited = totalDepositedFromTransactions;
+    const totalYield = totalBalance - totalDeposited; // Matches Dashboard.tsx:74
+    
+    const totals = {
+      balance: totalBalance,
+      deposited: totalDeposited,
+      yield: totalYield,
+    };
+    
+    console.log('Transaction-based totals:', totals);
     
     // Calculate 24h yield change
     const currentData: HistoricalYieldData = {
@@ -121,8 +174,14 @@ export async function calculateUserYieldData(
       yieldHistory.set(address.toLowerCase(), filteredHistory);
     }
     
-    // Prepare vault breakdown
-    const vaultBreakdown = allVaults
+    // Determine the primary asset symbol (same as Dashboard.tsx:77-81)
+    const assetSymbols = allUserVaults.map(v => v.asset?.symbol || 'ETH');
+    const primaryAsset = assetSymbols.length > 0 ? assetSymbols.reduce((a, b, i, arr) => 
+      arr.filter(v => v === a).length >= arr.filter(v => v === b).length ? a : b
+    ) : 'ETH';
+
+    // Prepare vault breakdown using allUserVaults (consistent with variable naming)
+    const vaultBreakdown = allUserVaults
       .filter(vault => vault.yieldData && vault.yieldData.currentBalance > 0)
       .map(vault => ({
         name: vault.name,
@@ -132,6 +191,7 @@ export async function calculateUserYieldData(
       }))
       .sort((a, b) => parseFloat(b.balance) - parseFloat(a.balance));
     
+    // Use the same yield percentage calculation as Dashboard.tsx:75
     const yieldPercentage = totals.deposited > 0 
       ? (totals.yield / totals.deposited) * 100 
       : 0;

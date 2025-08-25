@@ -166,7 +166,7 @@ export function Dashboard() {
             {userVaults.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div className="lg:col-span-2">
-                  <RewardsBreakdownChart vaults={vaultData?.vaults || []} />
+                  <RewardsBreakdownChart vaults={vaultData?.vaults || []} transactions={transactions} />
                 </div>
                 <div className="lg:col-span-1 flex">
                   <ClaimableRewards className="w-full" />
