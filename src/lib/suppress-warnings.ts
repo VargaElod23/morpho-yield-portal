@@ -17,9 +17,9 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     'Init() was called 2 times'
   ];
 
-  function shouldSuppress(message: string): boolean {
+  const shouldSuppress = (message: string): boolean => {
     return suppressedWarnings.some(pattern => message.includes(pattern));
-  }
+  };
 
   // Override console methods
   console.warn = (...args) => {
