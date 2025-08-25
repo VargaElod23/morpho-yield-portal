@@ -259,13 +259,53 @@ npm start
 - ✅ **Responsive Design**: Mobile-friendly interface
 - ✅ **Error Handling**: Graceful error states and loading indicators
 
+## Changelog Maintenance 📝
+
+This project maintains a detailed changelog following [Keep a Changelog](https://keepachangelog.com/) format.
+
+### Adding Changes
+```bash
+# Add a new feature
+npm run changelog:add "Added new notification system" "Added"
+
+# Fix a bug  
+npm run changelog:add "Fixed calculation inconsistency" "Fixed"
+
+# Change existing behavior
+npm run changelog:add "Updated UI layout" "Changed"
+```
+
+### Creating Releases
+```bash
+# Create a new release version
+npm run changelog:release "1.2.0"
+
+# This will:
+# - Update package.json version
+# - Move [Unreleased] changes to the new version
+# - Add release date
+# - Provide git commands to complete the release
+```
+
+### Change Types
+- **Added**: New features
+- **Changed**: Changes in existing functionality
+- **Fixed**: Bug fixes
+- **Removed**: Removed features
+- **Security**: Security vulnerabilities
+- **Deprecated**: Soon-to-be removed features
+
 ## Contributing 🤝
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Make your changes and update the changelog:
+   ```bash
+   npm run changelog:add "Add amazing feature" "Added"
+   ```
+4. Commit your changes (`git commit -m 'Add some amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
 ## License 📄
 

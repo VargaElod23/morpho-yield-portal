@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "changelog:add": "node scripts/update-changelog.js",
+    "changelog:release": "node scripts/release-version.js"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",
