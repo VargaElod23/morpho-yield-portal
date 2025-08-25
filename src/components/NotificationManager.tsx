@@ -10,12 +10,16 @@ export function NotificationManager() {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isBrave, setIsBrave] = useState(false);
 
   useEffect(() => {
     // Check if notifications are supported
     if ('Notification' in window && 'serviceWorker' in navigator) {
       setIsSupported(true);
       setPermission(Notification.permission);
+      
+      // Check if Brave browser
+      setIsBrave((navigator as any).brave !== undefined);
       
       // Check if already subscribed
       checkSubscription();
@@ -58,15 +62,32 @@ export function NotificationManager() {
     if (!('serviceWorker' in navigator) || !isConnected || !address) return;
     
     try {
+      // Check for VAPID key
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
+        throw new Error('VAPID public key not configured. Please add NEXT_PUBLIC_VAPID_PUBLIC_KEY to your environment variables.');
+      }
+
       // Register service worker
       await navigator.serviceWorker.register('/sw.js');
       const registration = await navigator.serviceWorker.ready;
       
-      // Subscribe to push notifications
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      // Check push manager availability
+      if (!registration.pushManager) {
+        throw new Error('Push manager not available. This browser may not support push notifications.');
+      }
+      
+      const applicationServerKey = urlBase64ToUint8Array(vapidKey);
+      
+      
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: vapidKey ? urlBase64ToUint8Array(vapidKey) as BufferSource : undefined
+        applicationServerKey: applicationServerKey as BufferSource
+      });
+      
+      console.log('Push subscription successful:', {
+        endpoint: subscription.endpoint,
+        keys: Object.keys(subscription.toJSON().keys || {})
       });
       
       // Save subscription to backend
@@ -95,6 +116,27 @@ export function NotificationManager() {
       
     } catch (error) {
       console.error('Error subscribing to notifications:', error);
+      
+      let errorMessage = 'Failed to subscribe to notifications';
+      if (error instanceof Error) {
+        if (error.message.includes('VAPID')) {
+          errorMessage = 'Push notifications not configured. Please set up VAPID keys.';
+        } else if (error.name === 'AbortError') {
+          const isBrave = (navigator as any).brave !== undefined;
+          if (isBrave) {
+            errorMessage = 'Brave browser blocks push notifications by default. Please:\n1. Go to brave://settings/privacy\n2. Find "Use Google services for push messaging"\n3. Enable this setting\n4. Or use Chrome/Edge for notifications';
+          } else {
+            errorMessage = 'Push service error. This might be due to missing VAPID keys or network issues.';
+          }
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = 'Push notifications not supported in this browser.';
+        } else if (error.name === 'NotAllowedError') {
+          errorMessage = 'Push notifications permission denied.';
+        }
+      }
+      
+      // You could show this error to the user in a toast/alert
+      console.warn('Notification subscription failed:', errorMessage);
     }
   };
 
@@ -130,8 +172,9 @@ export function NotificationManager() {
   }
 
   return (
-    <div className="flex items-center">
-      {permission === 'granted' ? (
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex items-center">
+        {permission === 'granted' && !isBrave ? (
         <button
           onClick={isSubscribed ? unsubscribe : subscribeToNotifications}
           disabled={isLoading}
@@ -155,14 +198,19 @@ export function NotificationManager() {
         </button>
       ) : (
         <button
-          onClick={requestPermission}
-          disabled={isLoading}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-900/20 text-blue-400 hover:bg-blue-900/30 transition-colors disabled:opacity-50"
+          onClick={isBrave ? undefined : requestPermission}
+          disabled={isLoading || isBrave}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            isBrave 
+              ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
+              : 'bg-blue-900/20 text-blue-400 hover:bg-blue-900/30'
+          } disabled:opacity-50`}
         >
-          <BellIcon className="h-4 w-4" />
-          Enable Notifications
+          <BellSlashIcon className="h-4 w-4" />
+          {isBrave ? 'Not Available in Brave' : 'Enable Notifications'}
         </button>
       )}
+      </div>
     </div>
   );
 }

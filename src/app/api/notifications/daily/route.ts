@@ -22,8 +22,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`Processing daily notifications for ${subscriptions.length} users`);
-    
+
     const results = {
       total: subscriptions.length,
       successful: 0,
@@ -43,7 +42,7 @@ export async function POST(request: NextRequest) {
             const yieldData = await calculateUserYieldData(sub.address, sub.chainIds);
             
             if (!yieldData) {
-              console.log(`No yield data found for ${sub.address}`);
+              console.error(`No yield data found for ${sub.address}`);
               return;
             }
 

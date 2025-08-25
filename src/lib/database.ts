@@ -20,7 +20,9 @@ if (process.env.DATABASE_URL || process.env.POSTGRES_URL) {
   // For Supabase or other PostgreSQL connections
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: {
+      rejectUnauthorized: false
+    }
   });
   
   // Create a sql template function similar to @vercel/postgres
