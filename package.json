@@ -33,7 +33,9 @@
     "viem": "^2.7.0",
     "wagmi": "^2.4.0",
     "web-push": "^3.6.7",
-    "@vercel/postgres": "^0.5.1"
+    "@vercel/postgres": "^0.5.1",
+    "pg": "^8.11.3",
+    "@types/pg": "^8.10.9"
   },
   "devDependencies": {
     "eslint": "^8.56.0",
