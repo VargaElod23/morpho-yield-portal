@@ -2,6 +2,7 @@
 
 import { WalletConnect } from './WalletConnect';
 import { ChainSelector } from './ChainSelector';
+import { NotificationManager } from './NotificationManager';
 import { TrendingUp, RefreshCw } from 'lucide-react';
 
 interface HeaderProps {
@@ -48,6 +49,9 @@ export function Header({ onChainSelect, onRefresh, isRefreshing }: HeaderProps) 
             {/* Chain Selector */}
             <ChainSelector onChainSelect={onChainSelect} />
 
+            {/* Notifications */}
+            <NotificationManager />
+
             {/* Wallet Connect */}
             <WalletConnect />
           </div>
@@ -79,6 +83,9 @@ export function Header({ onChainSelect, onRefresh, isRefreshing }: HeaderProps) 
 
               {/* Chain Selector */}
               <ChainSelector onChainSelect={onChainSelect} />
+
+              {/* Notifications */}
+              <NotificationManager />
 
               {/* Wallet Connect */}
               <WalletConnect />
