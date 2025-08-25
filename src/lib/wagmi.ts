@@ -27,7 +27,7 @@ function createWagmiConfig() {
         metadata: {
           name: 'Morpho Yield Monitor',
           description: 'Track your Morpho vault yields across multiple chains',
-          url: typeof window !== 'undefined' ? window.location.origin : 'https://morpho-yield-monitor.vercel.app',
+          url: typeof window !== 'undefined' ? window.location.origin : 'https://morpho-yield-portal.vercel.app',
           icons: ['/favicon.svg'],
         },
         showQrModal: false, // Prevent duplicate modal instances

@@ -20,19 +20,20 @@ export async function POST(request: NextRequest) {
 
     // Save subscription
     await saveUserSubscription(address, subscription, chainIds || [1]);
-
+    console.log('Subscription saved successfully', process.env.DISABLE_WELCOME_PUSH);
     // Send welcome notification
-    try {
-      await sendPushNotification(subscription, {
-        title: '🔔 Notifications Enabled!',
-        body: 'You\'ll now receive daily yield updates from your Morpho vaults.',
-        data: { type: 'welcome', address }
-      });
-    } catch (notificationError) {
-      console.warn('Failed to send welcome notification:', notificationError);
-      // Don't fail the subscription if welcome notification fails
+    if (process.env.DISABLE_WELCOME_PUSH !== 'true') {
+      try {
+        await sendPushNotification(subscription, {
+          title: '🔔 Notifications Enabled!',
+          body: 'You\'ll now receive daily yield updates from your Morpho vaults.',
+          data: { type: 'welcome', address }
+        });
+      } catch (notificationError) {
+        console.warn('Failed to send welcome notification:', notificationError);
+        // Don't fail the subscription if welcome notification fails
+      }
     }
-
     return NextResponse.json({ 
       success: true, 
       message: 'Subscription saved successfully' 

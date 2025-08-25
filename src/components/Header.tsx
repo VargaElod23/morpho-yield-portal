@@ -3,15 +3,19 @@
 import { WalletConnect } from './WalletConnect';
 import { ChainSelector } from './ChainSelector';
 import { NotificationManager } from './NotificationManager';
-import { TrendingUp, RefreshCw } from 'lucide-react';
+import { TrendingUp, RefreshCw, Mail } from 'lucide-react';
+import { useAccount } from 'wagmi';
 
 interface HeaderProps {
   onChainSelect?: (chainId: number) => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  onOpenEmailModal?: () => void;
 }
 
-export function Header({ onChainSelect, onRefresh, isRefreshing }: HeaderProps) {
+export function Header({ onChainSelect, onRefresh, isRefreshing, onOpenEmailModal }: HeaderProps) {
+  const { isConnected } = useAccount();
+  
   return (
     <header className="bg-morpho-surface border-b border-morpho-border sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
@@ -49,6 +53,17 @@ export function Header({ onChainSelect, onRefresh, isRefreshing }: HeaderProps) 
             {/* Chain Selector */}
             <ChainSelector onChainSelect={onChainSelect} />
 
+            {/* Email Subscription */}
+            {onOpenEmailModal && isConnected && (
+              <button
+                onClick={onOpenEmailModal}
+                className="p-2 text-morpho-text-secondary hover:text-morpho-accent hover:bg-morpho-accent/10 rounded-lg transition-colors"
+                title="Email Notifications"
+              >
+                <Mail className="w-5 h-5" />
+              </button>
+            )}
+
             {/* Notifications */}
             <NotificationManager />
 
@@ -83,6 +98,17 @@ export function Header({ onChainSelect, onRefresh, isRefreshing }: HeaderProps) 
 
               {/* Chain Selector */}
               <ChainSelector onChainSelect={onChainSelect} />
+
+              {/* Email Subscription */}
+              {onOpenEmailModal && isConnected && (
+                <button
+                  onClick={onOpenEmailModal}
+                  className="p-0.5 sm:p-1 text-morpho-text-secondary hover:text-morpho-accent hover:bg-morpho-accent/10 rounded-lg transition-colors"
+                  title="Email Notifications"
+                >
+                  <Mail className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                </button>
+              )}
 
               {/* Notifications */}
               <NotificationManager />

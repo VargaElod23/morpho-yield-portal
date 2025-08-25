@@ -2,7 +2,7 @@ import webpush from 'web-push';
 
 // VAPID configuration
 const vapidDetails = {
-  subject: 'mailto:admin@morpho-yield-monitor.com',
+  subject: 'mailto:admin@morpho-yield-portal.com',
   publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
   privateKey: process.env.VAPID_PRIVATE_KEY!,
 };

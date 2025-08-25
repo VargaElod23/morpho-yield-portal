@@ -112,6 +112,7 @@ export function useMorphoData() {
     if (vaultData && isConnected) {
       fetchVaultData(vaultData.chainId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, isConnected]); // Don't include fetchVaultData to avoid infinite loop
 
   const refetch = useCallback(() => {
