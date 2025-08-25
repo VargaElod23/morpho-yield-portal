@@ -20,9 +20,10 @@ if (process.env.DATABASE_URL || process.env.POSTGRES_URL) {
   // For Supabase or other PostgreSQL connections
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
+    ssl: process.env.NODE_ENV === 'production' ? {
+      rejectUnauthorized: false,
+      checkServerIdentity: () => undefined
+    } : false
   });
   
   // Create a sql template function similar to @vercel/postgres
@@ -92,6 +93,20 @@ export async function initializeDatabase() {
       )
     `;
 
+    // Create email subscriptions table
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS email_subscriptions (
+        id SERIAL PRIMARY KEY,
+        address TEXT NOT NULL,
+        email TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_emailed TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(address, email)
+      )
+    `;
+
     // Create yield history table for tracking 24h changes
     await sqlClient`
       CREATE TABLE IF NOT EXISTS yield_history (
@@ -109,9 +124,56 @@ export async function initializeDatabase() {
     await sqlClient`
       CREATE INDEX IF NOT EXISTS idx_user_subscriptions_address ON user_subscriptions(address)
     `;
+
+    await sqlClient`
+      CREATE INDEX IF NOT EXISTS idx_email_subscriptions_address ON email_subscriptions(address)
+    `;
     
     await sqlClient`
       CREATE INDEX IF NOT EXISTS idx_yield_history_address_timestamp ON yield_history(address, timestamp DESC)
+    `;
+
+    // Create new many-to-many email-wallet relationship tables
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS emails (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS wallets (
+        id SERIAL PRIMARY KEY,
+        address VARCHAR(42) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS email_wallet_subscriptions (
+        id SERIAL PRIMARY KEY,
+        email_id INTEGER REFERENCES emails(id) ON DELETE CASCADE,
+        wallet_id INTEGER REFERENCES wallets(id) ON DELETE CASCADE,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_emailed TIMESTAMP,
+        UNIQUE(email_id, wallet_id)
+      )
+    `;
+
+    // Create indexes for better performance
+    await sqlClient`
+      CREATE INDEX IF NOT EXISTS idx_email_wallet_active 
+      ON email_wallet_subscriptions(email_id, wallet_id) 
+      WHERE is_active = TRUE
+    `;
+
+    await sqlClient`
+      CREATE INDEX IF NOT EXISTS idx_wallet_subscriptions 
+      ON email_wallet_subscriptions(wallet_id) 
+      WHERE is_active = TRUE
     `;
 
     console.log('Database initialized successfully');
@@ -336,6 +398,185 @@ export async function cleanupOldYieldHistory(days: number = 90): Promise<void> {
     console.log(`Cleaned up ${result.rowCount} old yield history records`);
   } catch (error) {
     console.error('Failed to cleanup old yield history:', error);
+    throw error;
+  }
+}
+
+// Email subscription functions
+interface EmailSubscription {
+  address: string;
+  email: string;
+  isActive: boolean;
+  createdAt: Date;
+  lastEmailed?: Date;
+}
+
+export async function saveEmailSubscriptionDB(
+  address: string,
+  email: string
+): Promise<void> {
+  const sqlClient = getSql();
+  
+  try {
+    // Insert email if it doesn't exist
+    await sqlClient`
+      INSERT INTO emails (email)
+      VALUES (${email.toLowerCase()})
+      ON CONFLICT (email) DO NOTHING
+    `;
+
+    // Insert wallet if it doesn't exist
+    await sqlClient`
+      INSERT INTO wallets (address)
+      VALUES (${address.toLowerCase()})
+      ON CONFLICT (address) DO NOTHING
+    `;
+
+    // Create the subscription relationship
+    await sqlClient`
+      INSERT INTO email_wallet_subscriptions (email_id, wallet_id)
+      SELECT e.id, w.id
+      FROM emails e, wallets w
+      WHERE e.email = ${email.toLowerCase()} AND w.address = ${address.toLowerCase()}
+      ON CONFLICT (email_id, wallet_id)
+      DO UPDATE SET 
+        is_active = TRUE,
+        updated_at = CURRENT_TIMESTAMP
+    `;
+    
+    console.log(`Email subscription saved: ${email} for address: ${address}`);
+  } catch (error) {
+    console.error('Failed to save email subscription:', error);
+    throw error;
+  }
+}
+
+export async function getEmailSubscriptionsDB(address: string): Promise<EmailSubscription[]> {
+  const sqlClient = getSql();
+  
+  try {
+    const result = await sqlClient`
+      SELECT e.email, w.address, ews.is_active, ews.created_at, ews.last_emailed
+      FROM email_wallet_subscriptions ews
+      JOIN emails e ON ews.email_id = e.id
+      JOIN wallets w ON ews.wallet_id = w.id
+      WHERE w.address = ${address.toLowerCase()} AND ews.is_active = TRUE
+    `;
+    
+    return result.rows.map(row => ({
+      address: row.address,
+      email: row.email,
+      isActive: row.is_active,
+      createdAt: new Date(row.created_at),
+      lastEmailed: row.last_emailed ? new Date(row.last_emailed) : undefined,
+    }));
+  } catch (error) {
+    console.error('Failed to get email subscriptions:', error);
+    throw error;
+  }
+}
+
+export async function getAllEmailSubscriptionsDB(): Promise<EmailSubscription[]> {
+  const sqlClient = getSql();
+  
+  try {
+    const result = await sqlClient`
+      SELECT e.email, w.address, ews.is_active, ews.created_at, ews.last_emailed
+      FROM email_wallet_subscriptions ews
+      JOIN emails e ON ews.email_id = e.id
+      JOIN wallets w ON ews.wallet_id = w.id
+      WHERE ews.is_active = TRUE
+      ORDER BY ews.created_at DESC
+    `;
+    
+    return result.rows.map(row => ({
+      address: row.address,
+      email: row.email,
+      isActive: row.is_active,
+      createdAt: new Date(row.created_at),
+      lastEmailed: row.last_emailed ? new Date(row.last_emailed) : undefined,
+    }));
+  } catch (error) {
+    console.error('Failed to get all email subscriptions:', error);
+    throw error;
+  }
+}
+
+export async function removeEmailSubscriptionDB(
+  address: string,
+  email: string
+): Promise<void> {
+  const sqlClient = getSql();
+  
+  try {
+    await sqlClient`
+      UPDATE email_wallet_subscriptions 
+      SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
+      WHERE email_id = (SELECT id FROM emails WHERE email = ${email.toLowerCase()})
+        AND wallet_id = (SELECT id FROM wallets WHERE address = ${address.toLowerCase()})
+    `;
+    
+    console.log(`Email subscription deactivated: ${email} for address: ${address}`);
+  } catch (error) {
+    console.error('Failed to remove email subscription:', error);
+    throw error;
+  }
+}
+
+export async function updateLastEmailedDB(
+  address: string,
+  email: string
+): Promise<void> {
+  const sqlClient = getSql();
+  
+  try {
+    await sqlClient`
+      UPDATE email_wallet_subscriptions 
+      SET last_emailed = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE email_id = (SELECT id FROM emails WHERE email = ${email.toLowerCase()})
+        AND wallet_id = (SELECT id FROM wallets WHERE address = ${address.toLowerCase()})
+    `;
+  } catch (error) {
+    console.error('Failed to update last emailed timestamp:', error);
+    throw error;
+  }
+}
+
+// Helper functions for the many-to-many relationship
+export async function getWalletsByEmailDB(email: string): Promise<string[]> {
+  const sqlClient = getSql();
+  
+  try {
+    const result = await sqlClient`
+      SELECT w.address
+      FROM email_wallet_subscriptions ews
+      JOIN emails e ON ews.email_id = e.id
+      JOIN wallets w ON ews.wallet_id = w.id
+      WHERE e.email = ${email.toLowerCase()} AND ews.is_active = TRUE
+    `;
+    
+    return result.rows.map(row => row.address);
+  } catch (error) {
+    console.error('Failed to get wallets by email:', error);
+    throw error;
+  }
+}
+
+export async function getEmailsByWalletDB(address: string): Promise<string[]> {
+  const sqlClient = getSql();
+  
+  try {
+    const result = await sqlClient`
+      SELECT e.email
+      FROM email_wallet_subscriptions ews
+      JOIN emails e ON ews.email_id = e.id
+      JOIN wallets w ON ews.wallet_id = w.id
+      WHERE w.address = ${address.toLowerCase()} AND ews.is_active = TRUE
+    `;
+    
+    return result.rows.map(row => row.email);
+  } catch (error) {
+    console.error('Failed to get emails by wallet:', error);
     throw error;
   }
 }

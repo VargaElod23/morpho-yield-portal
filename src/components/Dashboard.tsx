@@ -8,7 +8,9 @@ import { VaultList } from './VaultList';
 import { DepositChart } from './DepositChart';
 import { RewardsBreakdownChart } from './RewardsBreakdownChart';
 import { ClaimableRewards } from './ClaimableRewards';
+import { EmailSubscriptionModal } from './EmailSubscriptionModal';
 import { useMorphoData } from '@/hooks/useMorphoData';
+import { useEmailSubscriptionModal } from '@/hooks/useEmailSubscriptionModal';
 import { isSupportedChain, getMorphoChainById } from '@/lib/chains';
 import { 
   AlertTriangle, 
@@ -24,6 +26,7 @@ export function Dashboard() {
   const { isConnected, address } = useAccount();
   const chainId = useChainId();
   const { vaultData, transactions, isLoading, error, refetch, switchChain, isSupported } = useMorphoData();
+  const { isModalOpen, openModal, closeModal } = useEmailSubscriptionModal();
   
   const [selectedChainId, setSelectedChainId] = useState<number>(chainId);
   const [showOnlyUserPositions, setShowOnlyUserPositions] = useState<boolean>(false);
@@ -98,6 +101,7 @@ export function Dashboard() {
         onChainSelect={handleChainSelect}
         onRefresh={handleRefresh}
         isRefreshing={isLoading}
+        onOpenEmailModal={openModal}
       />
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
@@ -168,7 +172,7 @@ export function Dashboard() {
                 <div className="lg:col-span-2">
                   <RewardsBreakdownChart vaults={vaultData?.vaults || []} transactions={transactions} />
                 </div>
-                <div className="lg:col-span-1 flex">
+                <div className="lg:col-span-1">
                   <ClaimableRewards className="w-full" />
                 </div>
               </div>
@@ -292,6 +296,12 @@ export function Dashboard() {
           </div>
         )}
       </main>
+
+      {/* Email Subscription Modal */}
+      <EmailSubscriptionModal 
+        isOpen={isModalOpen}
+        onClose={closeModal}
+      />
     </div>
   );
 }
